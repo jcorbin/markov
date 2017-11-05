@@ -44,7 +44,7 @@ func scanTokens(data []byte, atEOF bool) (advance int, token []byte, err error) 
 			}
 			if unicode.IsPunct(r) {
 				switch r {
-				case '\'', '"', '`', '‘', '’':
+				case '-', '\'', '"', '`', '‘', '’':
 				default:
 					return i, data[start:i], nil
 				}
@@ -275,6 +275,7 @@ func (be *bodyExtractor) proc() error {
 	be.procBuf.Reset()
 	for _, p := range be.buf {
 		be.procBuf.Write(p)
+		be.procBuf.WriteRune('\n')
 	}
 	sc := bufio.NewScanner(&be.procBuf)
 	sc.Split(scanTokens)

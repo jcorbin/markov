@@ -1,5 +1,10 @@
 package main
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 type symbol uint
 
 type dict struct {
@@ -29,4 +34,15 @@ func (d *dict) get(sym symbol) (string, bool) {
 		return d.sym2str[sym], true
 	}
 	return "", false
+}
+
+func (d *dict) toString(sym symbol) string {
+	if str, def := d.get(sym); def {
+		return str
+	}
+	return fmt.Sprintf("?+%X", sym)
+}
+
+func (d *dict) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.str2sym)
 }
