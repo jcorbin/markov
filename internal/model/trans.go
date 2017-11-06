@@ -33,17 +33,17 @@ func (ts Trans) AddChain(chain []symbol.Symbol) {
 	ts.Add(last, symbol.Symbol(0), 1)
 }
 
+type jsonWS struct {
+	Weight uint          `json:"weight"`
+	Symbol symbol.Symbol `json:"symbol"`
+}
+type jsonTS struct {
+	FromSym symbol.Symbol `json:"fromSym"`
+	ToSym   []jsonWS      `json:"toSym"`
+}
+
 // MarshalJSON marshals the table to JSON
 func (ts Trans) MarshalJSON() ([]byte, error) {
-	type jsonWS struct {
-		Weight uint          `json:"weight"`
-		Symbol symbol.Symbol `json:"symbol"`
-	}
-	type jsonTS struct {
-		FromSym symbol.Symbol `json:"fromSym"`
-		ToSym   []jsonWS      `json:"toSym"`
-	}
-
 	d := make([]jsonTS, 0, len(ts))
 	for fromSym, ws := range ts {
 		jws := make([]jsonWS, 0, len(ws))
@@ -55,5 +55,27 @@ func (ts Trans) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d)
 }
 
-// TODO: loading tables from JSON
+// UnmarshalJSON marshals the table to JSON
+func (ts *Trans) UnmarshalJSON(data []byte) error {
+	var d []jsonTS
+	if err := json.Unmarshal(data, &d); err != nil {
+		return err
+	}
+	if len(d) > 0 {
+		*ts = make(Trans, len(d))
+	} else {
+		*ts = nil
+	}
+	for _, jts := range d {
+		if len(jts.ToSym) > 0 {
+			ws := make(WeightedSymbols, len(jts.ToSym))
+			for _, jws := range jts.ToSym {
+				ws[jws.Symbol] = jws.Weight
+			}
+			(*ts)[jts.FromSym] = ws
+		}
+	}
+	return nil
+}
+
 // TODO: generating from a table
