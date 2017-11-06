@@ -6,18 +6,19 @@ import (
 	"unicode/utf8"
 
 	"github.com/jcorbin/markov/internal/guten/extractor"
+	"github.com/jcorbin/markov/internal/model"
 	"github.com/jcorbin/markov/internal/symbol"
 )
 
 type markovLang struct {
 	Dict  *symbol.Dict `json:"dictionary"`
-	Trans transSymbols `json:"transitions"`
+	Trans model.Trans  `json:"transitions"`
 }
 
 func makeMarkovLang() markovLang {
 	return markovLang{
 		Dict:  symbol.NewDict(),
-		Trans: make(transSymbols),
+		Trans: make(model.Trans),
 	}
 }
 
@@ -79,7 +80,7 @@ func (bld *builder) OnToken(tok []byte) error {
 }
 
 func (bld *builder) flush() error {
-	bld.Lang.Trans.addChain(bld.chain)
+	bld.Lang.Trans.AddChain(bld.chain)
 	bld.chain = bld.chain[:0]
 	return nil
 }

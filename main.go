@@ -174,10 +174,10 @@ func main() {
 					db.InvTW[word] = append(db.InvTW[word], id)
 
 					sym := db.TitleLang.Dict.Add(word)
-					db.TitleLang.Trans.add(last, sym)
+					db.TitleLang.Trans.Add(last, sym, 1)
 					last = sym
 				}
-				db.TitleLang.Trans.add(last, symbol.Symbol(0))
+				db.TitleLang.Trans.Add(last, symbol.Symbol(0), 1)
 			}
 
 			if !def {
