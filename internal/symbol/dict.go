@@ -43,6 +43,17 @@ func (d *Dict) Get(sym Symbol) (string, bool) {
 	return "", false
 }
 
+// Each calls the given function on each symbol in the dictionary,
+// in a random order, stopping on and returning any error.
+func (d *Dict) Each(f func(sym Symbol, str string) error) error {
+	for str, sym := range d.str2sym {
+		if err := f(sym, str); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ToString turns a Symbol into a string; if the Symbol isn't defined, a
 // "?+HEX" string is returned.
 func (d *Dict) ToString(sym Symbol) string {
