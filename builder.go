@@ -5,6 +5,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/jcorbin/markov/internal/guten/extractor"
 	"github.com/jcorbin/markov/internal/symbol"
 )
 
@@ -28,12 +29,12 @@ type builder struct {
 	chain []symbol.Symbol
 }
 
-func (bld *builder) title(title string) error {
+func (bld *builder) SetTitle(title string) error {
 	bld.Title = title
 	return nil
 }
 
-func (bld *builder) info(info map[string]string) error {
+func (bld *builder) SetInfo(info map[string]string) error {
 	if bld.Info == nil {
 		bld.Info = info
 		return nil
@@ -44,7 +45,7 @@ func (bld *builder) info(info map[string]string) error {
 	return nil
 }
 
-func (bld *builder) token(tok []byte) error {
+func (bld *builder) OnToken(tok []byte) error {
 	// TODO: handle numeric tokens specially
 
 	if r, width := utf8.DecodeRune(tok); width == len(tok) {
@@ -83,4 +84,4 @@ func (bld *builder) flush() error {
 	return nil
 }
 
-var _ extractResultor = &builder{}
+var _ extractor.Resultor = &builder{}

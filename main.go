@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/jcorbin/markov/internal/guten/extractor"
 	"github.com/jcorbin/markov/internal/guten/scanner"
 	"github.com/jcorbin/markov/internal/symbol"
 )
@@ -51,7 +52,7 @@ func procio(r io.Reader, w io.Writer, info map[string]string) (builder, error) {
 		Info: info,
 		Lang: makeMarkovLang(),
 	}
-	gs := scanner.NewScanner(r, newExtractor(&bld)) // scanner.Dumper{}
+	gs := scanner.NewScanner(r, extractor.New(&bld)) // scanner.Dumper{}
 	err := gs.Scan()
 	if err == nil {
 		enc := json.NewEncoder(w)
@@ -165,7 +166,7 @@ func main() {
 				buf.Reset()
 				buf.WriteString(strings.ToLower(di.Title))
 				sc := bufio.NewScanner(&buf)
-				sc.Split(scanTokens)
+				sc.Split(extractor.ScanTokens)
 				var last symbol.Symbol
 				for sc.Scan() {
 					word := sc.Text()
