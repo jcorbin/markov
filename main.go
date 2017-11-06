@@ -52,7 +52,7 @@ func procio(r io.Reader, w io.Writer, info map[string]string) (builder, error) {
 		Info: info,
 		Lang: makeMarkovLang(),
 	}
-	gs := scanner.NewScanner(r, extractor.New(&bld)) // scanner.Dumper{}
+	gs := scanner.New(r, extractor.New(&bld)) // scanner.Dumper{}
 	err := gs.Scan()
 	if err == nil {
 		enc := json.NewEncoder(w)

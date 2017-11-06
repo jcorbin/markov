@@ -40,9 +40,9 @@ type Scanner struct {
 	res Resultor
 }
 
-// NewScanner creates a new Scanner that will scan from the given io.Reader and
-// call methods on the given resultor.
-func NewScanner(r io.Reader, res Resultor) *Scanner {
+// New creates a new Scanner that will scan from the given io.Reader and call
+// methods on the given resultor.
+func New(r io.Reader, res Resultor) *Scanner {
 	return &Scanner{
 		sc:  bufio.NewScanner(r),
 		res: res,
