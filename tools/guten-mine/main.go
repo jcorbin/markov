@@ -58,7 +58,7 @@ func procio(r io.Reader, w io.Writer, info map[string]string) (builder, error) {
 	if err == nil {
 		enc := json.NewEncoder(w)
 		// enc.SetIndent("", "  ")
-		err = enc.Encode(&bld)
+		err = enc.Encode(&bld.Doc)
 	}
 	return bld, err
 }

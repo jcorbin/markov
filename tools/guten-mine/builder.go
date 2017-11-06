@@ -11,9 +11,7 @@ import (
 )
 
 type builder struct {
-	Title string            `json:"title"`
-	Info  map[string]string `json:"info"`
-	Lang  model.Lang        `json:"language"`
+	model.Doc
 
 	chain []symbol.Symbol
 }

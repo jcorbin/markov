@@ -16,3 +16,10 @@ type DocInfo struct {
 	Title      string            `json:"title"`
 	Info       map[string]string `json:"info"`
 }
+
+// Doc represents an extracted document loaded from a DocInfo in a DocDB.
+type Doc struct {
+	Title string            `json:"title"`
+	Info  map[string]string `json:"info"`
+	Lang  Lang              `json:"language"`
+}
