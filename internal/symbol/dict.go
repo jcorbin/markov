@@ -34,6 +34,13 @@ func (d *Dict) Add(str string) Symbol {
 	return sym
 }
 
+// GetSym gets any defined symbol for the given string, returning false and
+// empty string if none.
+func (d *Dict) GetSym(str string) (Symbol, bool) {
+	sym, def := d.str2sym[str]
+	return sym, def
+}
+
 // Get looks up a Symbol, returing its string and a bool defined flag; if not
 // defined, the empty sting is returned.
 func (d *Dict) Get(sym Symbol) (string, bool) {
