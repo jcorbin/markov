@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/jcorbin/markov/internal/guten/scanner"
 )
 
 func isFormatted(bline []byte) bool {
@@ -99,8 +101,8 @@ type extractor struct {
 	res   extractResultor
 }
 
-func (e *extractor) slug(s string) error { return e.meta("SLUG", s) }
-func (e *extractor) meta(key, val string) error {
+func (e *extractor) Slug(s string) error { return e.Meta("SLUG", s) }
+func (e *extractor) Meta(key, val string) error {
 	if e.info == nil {
 		e.info = make(map[string]string, 1)
 	}
@@ -108,35 +110,35 @@ func (e *extractor) meta(key, val string) error {
 	return nil
 }
 
-func (e *extractor) close() error {
+func (e *extractor) Close() error {
 	if e.state < extractorPre {
 		return errPrematureClose
 	}
 	return e.be.close()
 }
 
-func (e *extractor) mark(s string) error {
+func (e *extractor) Mark(s string) error {
 	if e.state == extractorBody {
 		e.state = extractorDone
 	} // TODO else :shrug:
 	return nil
 }
 
-func (e *extractor) data(buf []byte) error {
+func (e *extractor) Data(buf []byte) error {
 	if e.state != extractorBody {
 		return nil // TODO :shrug:
 	}
 	return e.be.data(buf)
 }
 
-func (e *extractor) boundary(end bool, name string) error {
+func (e *extractor) Boundary(end bool, name string) error {
 	switch e.state {
 	case extractorPre:
 		if end {
 			e.state = extractorDone
 		} else {
 			e.state = extractorBody
-			if err := e.meta("BOUNDARY_NAME", name); err != nil {
+			if err := e.Meta("BOUNDARY_NAME", name); err != nil {
 				return err
 			}
 
@@ -166,7 +168,7 @@ func (e *extractor) boundary(end bool, name string) error {
 	return nil
 }
 
-var _ scanResultor = &extractor{}
+var _ scanner.Resultor = &extractor{}
 
 var errEmptyBody = errors.New("empty body")
 
