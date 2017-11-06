@@ -16,6 +16,7 @@ import (
 
 	"github.com/jcorbin/markov/internal/guten/extractor"
 	"github.com/jcorbin/markov/internal/guten/scanner"
+	"github.com/jcorbin/markov/internal/model"
 	"github.com/jcorbin/markov/internal/symbol"
 )
 
@@ -50,7 +51,7 @@ func prefer(a, b docInfo) bool {
 func procio(r io.Reader, w io.Writer, info map[string]string) (builder, error) {
 	bld := builder{
 		Info: info,
-		Lang: makeMarkovLang(),
+		Lang: model.MakeLang(),
 	}
 	gs := scanner.New(r, extractor.New(&bld)) // scanner.Dumper{}
 	err := gs.Scan()
@@ -71,7 +72,7 @@ type docInfo struct {
 
 type docDB struct {
 	Docs      map[string]docInfo  `json:"docs"`
-	TitleLang markovLang          `json:"titleLang"`
+	TitleLang model.Lang          `json:"titleLang"`
 	InvTW     map[string][]string `json:"invertedTitleWords"`
 }
 
@@ -150,7 +151,7 @@ func main() {
 
 	db := docDB{
 		Docs:      make(map[string]docInfo),
-		TitleLang: makeMarkovLang(),
+		TitleLang: model.MakeLang(),
 		InvTW:     make(map[string][]string),
 	}
 

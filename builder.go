@@ -10,22 +10,10 @@ import (
 	"github.com/jcorbin/markov/internal/symbol"
 )
 
-type markovLang struct {
-	Dict  *symbol.Dict `json:"dictionary"`
-	Trans model.Trans  `json:"transitions"`
-}
-
-func makeMarkovLang() markovLang {
-	return markovLang{
-		Dict:  symbol.NewDict(),
-		Trans: make(model.Trans),
-	}
-}
-
 type builder struct {
 	Title string            `json:"title"`
 	Info  map[string]string `json:"info"`
-	Lang  markovLang        `json:"language"`
+	Lang  model.Lang        `json:"language"`
 
 	chain []symbol.Symbol
 }
