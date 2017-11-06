@@ -28,7 +28,7 @@ func closeup(name string, f *os.File, rerr *error) func() {
 	}
 }
 
-func prefer(a, b docInfo) bool {
+func prefer(a, b model.DocInfo) bool {
 	aenc := a.Info["Character set encoding"]
 	benc := b.Info["Character set encoding"]
 
@@ -63,20 +63,7 @@ func procio(r io.Reader, w io.Writer, info map[string]string) (builder, error) {
 	return bld, err
 }
 
-type docInfo struct {
-	SourceFile string            `json:"sourceFile"`
-	TransFile  string            `json:"transFile"`
-	Title      string            `json:"title"`
-	Info       map[string]string `json:"info"`
-}
-
-type docDB struct {
-	Docs      map[string]docInfo  `json:"docs"`
-	TitleLang model.Lang          `json:"titleLang"`
-	InvTW     map[string][]string `json:"invertedTitleWords"`
-}
-
-func process(nin string, doneDocs chan<- docInfo) {
+func process(nin string, doneDocs chan<- model.DocInfo) {
 	if err := func() (rerr error) {
 		nout := strings.TrimSuffix(nin, path.Ext(nin)) + ".markov.json"
 
@@ -106,7 +93,7 @@ func process(nin string, doneDocs chan<- docInfo) {
 			return err
 		}
 
-		doneDocs <- docInfo{
+		doneDocs <- model.DocInfo{
 			SourceFile: nin,
 			TransFile:  nout,
 			Title:      bld.Title,
@@ -138,7 +125,7 @@ func main() {
 	N := runtime.GOMAXPROCS(-1)
 	toProc := make(chan string, N)
 
-	doneDocs := make(chan docInfo, 10*N)
+	doneDocs := make(chan model.DocInfo, 10*N)
 
 	for i := 0; i < N; i++ {
 		go func(toProc <-chan string) {
@@ -149,8 +136,8 @@ func main() {
 		}(toProc)
 	}
 
-	db := docDB{
-		Docs:      make(map[string]docInfo),
+	db := model.DocDB{
+		Docs:      make(map[string]model.DocInfo),
 		TitleLang: model.MakeLang(),
 		InvTW:     make(map[string][]string),
 	}
