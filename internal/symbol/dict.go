@@ -56,3 +56,8 @@ func (d *Dict) ToString(sym Symbol) string {
 func (d *Dict) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.str2sym)
 }
+
+// UnmarshalJSON marshals the dictionary as JSON.
+func (d *Dict) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &d.str2sym)
+}
