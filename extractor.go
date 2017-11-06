@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -74,23 +75,28 @@ const (
 	extractorDone
 )
 
-func newExtractor(
-	handleTitle func(string) error,
-	handleToken func([]byte) error,
-) *extractor {
+type extractResultor interface {
+	title(string) error
+	info(map[string]string) error
+	token([]byte) error
+}
+
+func newExtractor(res extractResultor) *extractor {
 	return &extractor{
 		be: bodyExtractor{
-			handler: handleToken,
+			handler: res.token,
 		},
-		handleTitle: handleTitle,
+		res: res,
 	}
 }
 
+var errPrematureClose = errors.New("premature extractor close")
+
 type extractor struct {
-	info        map[string]string
-	state       extractorState
-	be          bodyExtractor
-	handleTitle func(string) error
+	info  map[string]string
+	state extractorState
+	be    bodyExtractor
+	res   extractResultor
 }
 
 func (e *extractor) slug(s string) error { return e.meta("SLUG", s) }
@@ -100,6 +106,13 @@ func (e *extractor) meta(key, val string) error {
 	}
 	e.info[key] = val
 	return nil
+}
+
+func (e *extractor) close() error {
+	if e.state < extractorPre {
+		return errPrematureClose
+	}
+	return e.be.close()
 }
 
 func (e *extractor) mark(s string) error {
@@ -127,6 +140,10 @@ func (e *extractor) boundary(end bool, name string) error {
 				return err
 			}
 
+			if err := e.res.info(e.info); err != nil {
+				return err
+			}
+
 			title := e.info["Title"]
 			if parts := strings.SplitN(title, "\n", 2); len(parts) > 1 {
 				title = parts[0]
@@ -135,7 +152,8 @@ func (e *extractor) boundary(end bool, name string) error {
 				title = name
 			}
 			e.be.title = strings.ToLower(title)
-			if err := e.handleTitle(title); err != nil {
+
+			if err := e.res.title(title); err != nil {
 				return err
 			}
 		}
@@ -150,6 +168,8 @@ func (e *extractor) boundary(end bool, name string) error {
 
 var _ scanResultor = &extractor{}
 
+var errEmptyBody = errors.New("empty body")
+
 type bodyExtractor struct {
 	title   string
 	blanks  int
@@ -157,6 +177,13 @@ type bodyExtractor struct {
 	buf     [][]byte
 	procBuf bytes.Buffer
 	handler func(token []byte) error
+}
+
+func (be *bodyExtractor) close() error {
+	if !be.began {
+		return errEmptyBody
+	}
+	return nil
 }
 
 func (be *bodyExtractor) data(buf []byte) error {

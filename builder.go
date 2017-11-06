@@ -1,25 +1,37 @@
 package main
 
 import (
-	"encoding/json"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 )
 
 type builder struct {
-	title string
-	dict  *dict
+	Title string            `json:"title"`
+	Info  map[string]string `json:"info"`
+	Dict  *dict             `json:"dictionary"`
+	Trans transSymbols      `json:"transitions"`
+
 	chain []symbol
-	ts    transSymbols
 }
 
-func (bld *builder) setTitle(title string) error {
-	bld.title = title
+func (bld *builder) title(title string) error {
+	bld.Title = title
 	return nil
 }
 
-func (bld *builder) handle(tok []byte) error {
+func (bld *builder) info(info map[string]string) error {
+	if bld.Info == nil {
+		bld.Info = info
+		return nil
+	}
+	for k, v := range info {
+		bld.Info[k] = v
+	}
+	return nil
+}
+
+func (bld *builder) token(tok []byte) error {
 	// TODO: handle numeric tokens specially
 
 	if r, width := utf8.DecodeRune(tok); width == len(tok) {
@@ -48,20 +60,14 @@ func (bld *builder) handle(tok []byte) error {
 
 	stok := string(tok)
 	stok = strings.ToLower(stok)
-	bld.chain = append(bld.chain, bld.dict.add(stok))
+	bld.chain = append(bld.chain, bld.Dict.add(stok))
 	return nil
 }
 
 func (bld *builder) flush() error {
-	bld.ts.addChain(bld.chain)
+	bld.Trans.addChain(bld.chain)
 	bld.chain = bld.chain[:0]
 	return nil
 }
 
-func (bld *builder) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Title string       `json:"title"`
-		Dict  *dict        `json:"dictionary"`
-		Trans transSymbols `json:"transitions"`
-	}{bld.title, bld.dict, bld.ts})
-}
+var _ extractResultor = &builder{}

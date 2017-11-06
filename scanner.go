@@ -2,10 +2,22 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"regexp"
-	"strings"
 )
+
+// TODO: support meta "Character set encoding"
+// 6923 'ASCII'
+// 5742 'ISO-8859-1'
+//  709 'UTF-8'
+//   83 'US-ASCII'
+//   21 'ISO
+//    5 'Unicode
+//    5 'ISO-8859-2'
+//    2 'ISO-8859-3'
+//    2 'ISO-8859-15'
+//    2 'CP-1252'
 
 type scanResultor interface {
 	slug(s string) error
@@ -13,6 +25,7 @@ type scanResultor interface {
 	mark(s string) error
 	boundary(end bool, name string) error
 	data(buf []byte) error
+	close() error
 }
 
 var (
@@ -25,7 +38,12 @@ type gutenScan struct {
 	res scanResultor
 }
 
-func (gs gutenScan) scan() error {
+func (gs gutenScan) scan() (err error) {
+	defer func() {
+		if cerr := gs.res.close(); err == nil {
+			err = cerr
+		}
+	}()
 	for _, f := range []func() error{
 		gs.scanFirst,
 		gs.scanMeta,
@@ -35,9 +53,7 @@ func (gs gutenScan) scan() error {
 			return err
 		}
 	}
-
 	return gs.sc.Err()
-
 }
 
 func (gs gutenScan) handleMark() (bool, error) {
@@ -56,43 +72,41 @@ func (gs gutenScan) handleMark() (bool, error) {
 }
 
 func (gs gutenScan) scanMeta() error {
-	for {
-		var key, val string
-		var off int
 
-		// scan key
-		for gs.sc.Scan() {
-			// mark ends meta section
-			if mark, err := gs.handleMark(); err != nil {
-				return err
-			} else if mark {
-				return nil
-			}
+	// scan key
+	for gs.sc.Scan() {
+		// mark ends meta section
+		if mark, err := gs.handleMark(); err != nil {
+			return err
+		} else if mark {
+			return nil
+		}
 
-			// skip blank lines
-			line := gs.sc.Text()
-			if t := strings.TrimSpace(line); len(t) == 0 {
-				continue
-			}
+		// skip blank lines
+		bline := gs.sc.Bytes()
+		if t := bytes.TrimSpace(bline); len(t) == 0 {
+			continue
+		}
 
-			// detect key: val
-			if off = strings.Index(line, ": "); off > 0 {
-				key = line[:off]
-				off += 2 // len(": ")
-				val = line[off:]
-				break
-			}
+		// detect key: val
+		off := bytes.Index(bline, []byte(": "))
 
+		if off <= 0 {
 			// emit non key-val
 			if err := gs.res.data(gs.sc.Bytes()); err != nil {
 				return err
 			}
+			continue
 		}
 
+		key := string(bline[:off])
+
 		// continue scanning val
+		off += 2 // len(": ")
+		val := string(bline[off:])
 		for gs.sc.Scan() {
-			if line := gs.sc.Text(); len(line) >= off && len(strings.TrimSpace(line[:off])) == 0 {
-				val += "\n" + line[off:]
+			if bline := gs.sc.Bytes(); len(bline) >= off && len(bytes.TrimSpace(bline[:off])) == 0 {
+				val += "\n" + string(bline[off:])
 				continue
 			}
 			if err := gs.res.meta(key, val); err != nil {
@@ -101,6 +115,8 @@ func (gs gutenScan) scanMeta() error {
 			break
 		}
 	}
+
+	return gs.sc.Err()
 }
 
 func (gs gutenScan) scanBody() error {
@@ -119,21 +135,25 @@ func (gs gutenScan) scanBody() error {
 func (gs gutenScan) scanFirst() error {
 	var first string
 	for gs.sc.Scan() {
-		line := gs.sc.Text()
-		t := strings.TrimSpace(line)
+		t := bytes.TrimSpace(gs.sc.Bytes())
 		if len(t) == 0 {
 			break
 		}
 		if len(first) > 0 {
-			first += " " + t
+			first += " " + string(t)
 		} else {
-			first = t
+			first = string(t)
 		}
 	}
 	return gs.res.slug(first)
 }
 
 type dumper struct{}
+
+func (d dumper) close() error {
+	_, err := fmt.Printf("DONE\n")
+	return err
+}
 
 func (d dumper) slug(s string) error {
 	_, err := fmt.Printf("slug: %q\n", s)
