@@ -13,6 +13,8 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/jcorbin/markov/internal/symbol"
 )
 
 func closeup(name string, f *os.File, rerr *error) func() {
@@ -167,17 +169,17 @@ func main() {
 				buf.WriteString(strings.ToLower(di.Title))
 				sc := bufio.NewScanner(&buf)
 				sc.Split(scanTokens)
-				var last symbol
+				var last symbol.Symbol
 				for sc.Scan() {
 					word := sc.Text()
 
 					db.InvTW[word] = append(db.InvTW[word], id)
 
-					sym := db.TitleLang.Dict.add(word)
+					sym := db.TitleLang.Dict.Add(word)
 					db.TitleLang.Trans.add(last, sym)
 					last = sym
 				}
-				db.TitleLang.Trans.add(last, symbol(0))
+				db.TitleLang.Trans.add(last, symbol.Symbol(0))
 			}
 
 			if !def {
@@ -214,7 +216,9 @@ func main() {
 	<-docDBDone
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
-	enc.Encode(db)
+	if err := enc.Encode(db); err != nil {
+		log.Fatalln("Failed to write doc db index:", err)
+	}
 
 	return
 

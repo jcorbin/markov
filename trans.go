@@ -2,21 +2,23 @@ package main
 
 import (
 	"encoding/json"
+
+	"github.com/jcorbin/markov/internal/symbol"
 )
 
-type weightedSymbols map[symbol]uint
-type transSymbols map[symbol]weightedSymbols
+type weightedSymbols map[symbol.Symbol]uint
+type transSymbols map[symbol.Symbol]weightedSymbols
 
-func (ts transSymbols) addChain(chain []symbol) {
-	var last symbol
+func (ts transSymbols) addChain(chain []symbol.Symbol) {
+	var last symbol.Symbol
 	for _, sym := range chain {
 		ts.add(last, sym)
 		last = sym
 	}
-	ts.add(last, symbol(0))
+	ts.add(last, symbol.Symbol(0))
 }
 
-func (ts transSymbols) add(a, b symbol) {
+func (ts transSymbols) add(a, b symbol.Symbol) {
 	ws := ts[a]
 	if ws == nil {
 		ws = make(weightedSymbols, 1)
@@ -27,12 +29,12 @@ func (ts transSymbols) add(a, b symbol) {
 
 func (ts transSymbols) MarshalJSON() ([]byte, error) {
 	type jsonWS struct {
-		Weight uint   `json:"weight"`
-		Symbol symbol `json:"symbol"`
+		Weight uint          `json:"weight"`
+		Symbol symbol.Symbol `json:"symbol"`
 	}
 	type jsonTS struct {
-		FromSym symbol   `json:"fromSym"`
-		ToSym   []jsonWS `json:"toSym"`
+		FromSym symbol.Symbol `json:"fromSym"`
+		ToSym   []jsonWS      `json:"toSym"`
 	}
 
 	d := make([]jsonTS, 0, len(ts))

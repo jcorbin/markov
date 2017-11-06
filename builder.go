@@ -4,16 +4,18 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/jcorbin/markov/internal/symbol"
 )
 
 type markovLang struct {
-	Dict  *dict        `json:"dictionary"`
+	Dict  *symbol.Dict `json:"dictionary"`
 	Trans transSymbols `json:"transitions"`
 }
 
 func makeMarkovLang() markovLang {
 	return markovLang{
-		Dict:  newDict(),
+		Dict:  symbol.NewDict(),
 		Trans: make(transSymbols),
 	}
 }
@@ -23,7 +25,7 @@ type builder struct {
 	Info  map[string]string `json:"info"`
 	Lang  markovLang        `json:"language"`
 
-	chain []symbol
+	chain []symbol.Symbol
 }
 
 func (bld *builder) title(title string) error {
@@ -71,7 +73,7 @@ func (bld *builder) token(tok []byte) error {
 
 	stok := string(tok)
 	stok = strings.ToLower(stok)
-	bld.chain = append(bld.chain, bld.Lang.Dict.add(stok))
+	bld.chain = append(bld.chain, bld.Lang.Dict.Add(stok))
 	return nil
 }
 
