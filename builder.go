@@ -6,11 +6,22 @@ import (
 	"unicode/utf8"
 )
 
+type markovLang struct {
+	Dict  *dict        `json:"dictionary"`
+	Trans transSymbols `json:"transitions"`
+}
+
+func makeMarkovLang() markovLang {
+	return markovLang{
+		Dict:  newDict(),
+		Trans: make(transSymbols),
+	}
+}
+
 type builder struct {
 	Title string            `json:"title"`
 	Info  map[string]string `json:"info"`
-	Dict  *dict             `json:"dictionary"`
-	Trans transSymbols      `json:"transitions"`
+	Lang  markovLang        `json:"language"`
 
 	chain []symbol
 }
@@ -60,12 +71,12 @@ func (bld *builder) token(tok []byte) error {
 
 	stok := string(tok)
 	stok = strings.ToLower(stok)
-	bld.chain = append(bld.chain, bld.Dict.add(stok))
+	bld.chain = append(bld.chain, bld.Lang.Dict.add(stok))
 	return nil
 }
 
 func (bld *builder) flush() error {
-	bld.Trans.addChain(bld.chain)
+	bld.Lang.Trans.addChain(bld.chain)
 	bld.chain = bld.chain[:0]
 	return nil
 }

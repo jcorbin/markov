@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -22,26 +23,59 @@ func closeup(name string, f *os.File, rerr *error) func() {
 	}
 }
 
-func procio(r io.Reader, w io.Writer, info map[string]string) error {
+func prefer(a, b docInfo) bool {
+	aenc := a.Info["Character set encoding"]
+	benc := b.Info["Character set encoding"]
+
+	// TODO: update once we correct parse other encodings
+	for _, enc := range []string{"UTF-8", "Unicode", "ASCII", "US-ASCII"} {
+		if aenc == enc {
+			return false
+		}
+		if benc == enc {
+			return true
+		}
+	}
+
+	// log.Printf("??? PREFER A: %+v", di.Info)
+	// log.Printf("??? PREFER B: %+v", prior.Info)
+
+	return false
+}
+
+func procio(r io.Reader, w io.Writer, info map[string]string) (builder, error) {
 	bld := builder{
-		Trans: make(transSymbols),
-		Info:  info,
-		Dict:  newDict(),
+		Info: info,
+		Lang: makeMarkovLang(),
 	}
 	gs := gutenScan{
 		sc: bufio.NewScanner(r),
 		// res: dumper{},
 		res: newExtractor(&bld),
 	}
-	if err := gs.scan(); err != nil {
-		return err
+	err := gs.scan()
+	if err == nil {
+		enc := json.NewEncoder(w)
+		// enc.SetIndent("", "  ")
+		err = enc.Encode(&bld)
 	}
-	enc := json.NewEncoder(w)
-	// enc.SetIndent("", "  ")
-	return enc.Encode(&bld)
+	return bld, err
 }
 
-func process(nin string) {
+type docInfo struct {
+	SourceFile string            `json:"sourceFile"`
+	TransFile  string            `json:"transFile"`
+	Title      string            `json:"title"`
+	Info       map[string]string `json:"info"`
+}
+
+type docDB struct {
+	Docs      map[string]docInfo  `json:"docs"`
+	TitleLang markovLang          `json:"titleLang"`
+	InvTW     map[string][]string `json:"invertedTitleWords"`
+}
+
+func process(nin string, doneDocs chan<- docInfo) {
 	if err := func() (rerr error) {
 		nout := strings.TrimSuffix(nin, path.Ext(nin)) + ".markov.json"
 
@@ -64,10 +98,18 @@ func process(nin string) {
 
 		log.Printf("processing %q", nin)
 
-		if err := procio(fin, fout, map[string]string{
+		bld, err := procio(fin, fout, map[string]string{
 			"sourceFile": nin,
-		}); err != nil {
+		})
+		if err != nil {
 			return err
+		}
+
+		doneDocs <- docInfo{
+			SourceFile: nin,
+			TransFile:  nout,
+			Title:      bld.Title,
+			Info:       bld.Info,
 		}
 
 		log.Printf("processed %q", nin)
@@ -83,7 +125,7 @@ func main() {
 	flag.Parse()
 
 	if !argsFromStdin && len(flag.Args()) == 0 {
-		if err := procio(os.Stdin, os.Stdout, map[string]string{
+		if _, err := procio(os.Stdin, os.Stdout, map[string]string{
 			"sourceFile": "<stdin>",
 		}); err != nil {
 			log.Fatalln(err)
@@ -95,14 +137,59 @@ func main() {
 	N := runtime.GOMAXPROCS(-1)
 	toProc := make(chan string, N)
 
+	doneDocs := make(chan docInfo, 10*N)
+
 	for i := 0; i < N; i++ {
 		go func(toProc <-chan string) {
 			for arg := range toProc {
-				process(arg)
+				process(arg, doneDocs)
 				wg.Done()
 			}
 		}(toProc)
 	}
+
+	db := docDB{
+		Docs:      make(map[string]docInfo),
+		TitleLang: makeMarkovLang(),
+		InvTW:     make(map[string][]string),
+	}
+
+	docDBDone := make(chan struct{})
+	go func() {
+		var buf bytes.Buffer
+		for di := range doneDocs {
+			id := di.Title
+			prior, def := db.Docs[id]
+
+			if !def {
+				// ingest the title for markov generation and inverted lookup
+				buf.Reset()
+				buf.WriteString(strings.ToLower(di.Title))
+				sc := bufio.NewScanner(&buf)
+				sc.Split(scanTokens)
+				var last symbol
+				for sc.Scan() {
+					word := sc.Text()
+
+					db.InvTW[word] = append(db.InvTW[word], id)
+
+					sym := db.TitleLang.Dict.add(word)
+					db.TitleLang.Trans.add(last, sym)
+					last = sym
+				}
+				db.TitleLang.Trans.add(last, symbol(0))
+			}
+
+			if !def {
+				db.Docs[id] = di
+				log.Printf("Indexed %v => %+v", id, di.Info)
+			} else if prefer(di, prior) {
+				db.Docs[id] = di
+				log.Printf("Re-Indexed %v => %+v", id, di.Info)
+			}
+		}
+		docDBDone <- struct{}{}
+	}()
 
 	if argsFromStdin {
 		sc := bufio.NewScanner(os.Stdin)
@@ -122,6 +209,13 @@ func main() {
 
 	close(toProc)
 	wg.Wait()
+	close(doneDocs)
+
+	<-docDBDone
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	enc.Encode(db)
+
 	return
 
 }
