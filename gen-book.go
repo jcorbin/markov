@@ -40,49 +40,55 @@ func genTitle() (string, model.SupportDocIDs, error) {
 	return "", nil, errors.New("unable to produce acceptable title")
 }
 
+type bookGen struct {
+	buf bytes.Buffer
+	w   io.Writer
+}
+
 func genBook(title string, lng model.Lang, w io.Writer) error {
+	var bg bookGen
+	bg.w = w
+
 	// TODO: proper content generation: needs paragraph, eof markers, maybe
 	// even section headers.
-	var buf bytes.Buffer
 	for n := 0; n < 100; {
 		first := true
 		_ = lng.Trans.GenChain(rng, func(sym symbol.Symbol) error {
 			if sym == 0 {
-				_, _ = buf.WriteRune('.')
+				_, _ = bg.buf.WriteRune('.')
 				return nil
 			}
 			word := lng.Dict.ToString(sym)
-			if n := buf.Len(); n+len(word) > 79 {
-				buf.WriteRune('\n')
-				_, err := w.Write(buf.Bytes())
-				if err != nil {
+			if n := bg.buf.Len(); n+len(word) > 79 {
+				if err := bg.flush(); err != nil {
 					return err
 				}
-				buf.Reset()
 			} else {
 				if n > 0 {
-					_, _ = buf.WriteRune(' ')
+					_, _ = bg.buf.WriteRune(' ')
 				}
 				if first {
-					_, _ = buf.WriteString(strings.Title(word))
+					_, _ = bg.buf.WriteString(strings.Title(word))
 					first = false
 				} else {
-					_, _ = buf.WriteString(word)
+					_, _ = bg.buf.WriteString(word)
 				}
 			}
 			n++
 			return nil
 		})
 	}
-	if buf.Len() > 0 {
-		buf.WriteRune('\n')
-		_, err := w.Write(buf.Bytes())
-		if err != nil {
-			return err
-		}
-		buf.Reset()
+	return bg.flush()
+}
+
+func (bg *bookGen) flush() error {
+	if bg.buf.Len() == 0 {
+		return nil
 	}
-	return nil
+	bg.buf.WriteRune('\n')
+	_, err := bg.w.Write(bg.buf.Bytes())
+	bg.buf.Reset()
+	return err
 }
 
 func collectDocs(atLeast int) (model.SupportDocIDs, error) {
