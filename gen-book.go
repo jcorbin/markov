@@ -52,7 +52,8 @@ func genBook(title string, lng model.Lang) error {
 			}
 			word := lng.Dict.ToString(sym)
 			if n := buf.Len(); n+len(word) > 79 {
-				fmt.Printf("%s\n", buf.Bytes())
+				buf.WriteRune('\n')
+				fmt.Printf(buf.Bytes())
 				buf.Reset()
 			} else {
 				if n > 0 {
@@ -70,7 +71,8 @@ func genBook(title string, lng model.Lang) error {
 		})
 	}
 	if buf.Len() > 0 {
-		fmt.Printf("%s\n", buf.Bytes())
+		buf.WriteRune('\n')
+		fmt.Printf(buf.Bytes())
 		buf.Reset()
 	}
 	return nil
