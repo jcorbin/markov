@@ -46,39 +46,71 @@ type bookGen struct {
 }
 
 func genBook(title string, lng model.Lang, w io.Writer) error {
+	const limit = 10000 // TODO: parameter
+
+	var stop = errors.New("done")
 	var bg bookGen
 	bg.w = w
 
-	// TODO: proper content generation: needs paragraph, eof markers, maybe
-	// even section headers.
-	for n := 0; n < 100; {
-		first := true
-		_ = lng.Trans.GenChain(rng, func(sym symbol.Symbol) error {
-			if sym == 0 {
-				_, _ = bg.buf.WriteRune('.')
-				return nil
+	// TODO: handle punctuation better
+	// TODO: maybe section headers
+
+	chainLength := 0
+
+	first := true
+	err := lng.Trans.GenChain(rng, func(sym symbol.Symbol) error {
+		switch sym {
+		case 0, symbol.EOF:
+			return stop
+		case symbol.GS:
+			first = true
+			bg.buf.WriteRune('\n')
+			return bg.flush()
+		}
+
+		word := lng.Dict.ToString(sym)
+		if n := bg.buf.Len(); n+len(word) > 79 {
+			if err := bg.flush(); err != nil {
+				return err
 			}
-			word := lng.Dict.ToString(sym)
-			if n := bg.buf.Len(); n+len(word) > 79 {
+		} else {
+			if n > 0 {
+				_, _ = bg.buf.WriteRune(' ')
+			}
+			if first {
+				_, _ = bg.buf.WriteString(strings.Title(word))
+				first = false
+			} else {
+				_, _ = bg.buf.WriteString(word)
+			}
+		}
+
+		chainLength++
+		switch word {
+		case ".", "!", "?":
+			first = true
+			if chainLength >= limit {
+				// TODO: approach / generate / work-in EOF more naturally
+				bg.buf.WriteRune('\n')
 				if err := bg.flush(); err != nil {
 					return err
 				}
-			} else {
-				if n > 0 {
-					_, _ = bg.buf.WriteRune(' ')
+				fmt.Fprintf(&bg.buf, "-- Cut off by editorial oversight: exceeded %v words", limit)
+				if err := bg.flush(); err != nil {
+					return err
 				}
-				if first {
-					_, _ = bg.buf.WriteString(strings.Title(word))
-					first = false
-				} else {
-					_, _ = bg.buf.WriteString(word)
-				}
+				return stop
 			}
-			n++
-			return nil
-		})
+		}
+
+		return nil
+	})
+
+	if err == nil || err == stop {
+		err = bg.flush()
 	}
-	return bg.flush()
+
+	return err
 }
 
 func (bg *bookGen) flush() error {
