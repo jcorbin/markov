@@ -17,6 +17,7 @@ type builder struct {
 }
 
 func (bld *builder) SetTitle(title string) error {
+	title = strings.Trim(title, `"'?!.`)
 	bld.Title = title
 	return nil
 }
