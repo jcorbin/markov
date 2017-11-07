@@ -9,13 +9,19 @@ import (
 
 var errEmptyBody = errors.New("empty body")
 
+// BodyResultor is the interface implement to receive body text extraction
+// events.
+type BodyResultor interface {
+	OnToken([]byte) error
+}
+
 type bodyExtractor struct {
 	title   string
 	blanks  int
 	began   bool
 	buf     [][]byte
 	procBuf bytes.Buffer
-	handler func(token []byte) error
+	res     BodyResultor
 }
 
 func (be *bodyExtractor) close() error {
@@ -146,7 +152,7 @@ func (be *bodyExtractor) proc() error {
 	sc := bufio.NewScanner(&be.procBuf)
 	sc.Split(ScanTokens)
 	for sc.Scan() {
-		if err := be.handler(sc.Bytes()); err != nil {
+		if err := be.res.OnToken(sc.Bytes()); err != nil {
 			return err
 		}
 	}

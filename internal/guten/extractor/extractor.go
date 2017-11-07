@@ -20,20 +20,18 @@ const (
 	stateDone
 )
 
-// Resultor is the interface implemnetd to receive results from Extractor.
+// Resultor is the interface implemented to receive results from Extractor.
 type Resultor interface {
 	SetTitle(string) error
 	SetInfo(map[string]string) error
-	OnToken([]byte) error
+	BodyResultor
 }
 
 // New creates a new extractor that will call the given Resultor; it implements
 // scanner.Resultor, and expects to be called by one run of a scanner.Scanner.
 func New(res Resultor) *Extractor {
 	return &Extractor{
-		be: bodyExtractor{
-			handler: res.OnToken,
-		},
+		be:  bodyExtractor{res: res},
 		res: res,
 	}
 }
