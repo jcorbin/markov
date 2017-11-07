@@ -115,6 +115,15 @@ func main() {
 
 	flag.Parse()
 
+	dbFile := os.Stdin
+	if args := flag.Args(); len(args) > 0 {
+		f, err := os.Open(args[0])
+		if err != nil {
+			log.Fatalf("Failed to read %q: %v", args[0], err)
+		}
+		dbFile = f
+	}
+
 	if err := func(r io.Reader, w io.Writer) error {
 		dec := json.NewDecoder(r)
 		if err := dec.Decode(&db); err != nil {
@@ -148,7 +157,7 @@ func main() {
 			return err
 		}
 		return genBook(title, lng, w)
-	}(os.Stdin, os.Stdout); err != nil {
+	}(dbFile, os.Stdout); err != nil {
 		log.Fatalln(err)
 	}
 }
