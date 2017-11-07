@@ -15,11 +15,24 @@ type Dict struct {
 	sym2str []string
 }
 
+// GS is the group separator symbol, used to signal paragraphs.
+const GS = Symbol(1)
+const gs = "\x1d"
+
 // NewDict creates a new dict with the 0 Symbol mapped to "".
 func NewDict() *Dict {
 	return &Dict{
-		str2sym: map[string]Symbol{"": 0},
-		sym2str: []string{""},
+		str2sym: map[string]Symbol{
+			"":  0,
+			gs:  GS,
+			".": 2,
+			"!": 3,
+			"?": 4,
+		},
+		sym2str: []string{
+			"", gs,
+			".", "!", "?",
+		},
 	}
 }
 
