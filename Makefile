@@ -1,6 +1,11 @@
 GUTENROOT ?= ~/gutenberg
 
-%: tools/%
+.PHONY: guten-mine
+guten-mine: tools/guten-mine
+	go build ./$<
+
+.PHONY: word-demo
+word-demo: tools/word-demo
 	go build ./$<
 
 PHONY: docs.json
