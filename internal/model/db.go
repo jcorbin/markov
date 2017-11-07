@@ -2,7 +2,10 @@ package model
 
 import (
 	"encoding/json"
+	"math/rand"
 	"os"
+
+	"github.com/jcorbin/markov/internal/symbol"
 )
 
 // DocDB represents a database of extracted documents. It contains a markov
@@ -27,6 +30,30 @@ type Doc struct {
 	Title string            `json:"title"`
 	Info  map[string]string `json:"info"`
 	Lang  Lang              `json:"language"`
+}
+
+// GenTitle generates a random document title, and returns a set of supporting
+// document ids (mapped to their longest supporting word).
+func (db DocDB) GenTitle(rng *rand.Rand) (string, map[string]string) {
+	title, docs := "", make(map[string]string)
+	_ = db.TitleLang.Trans.GenChain(rng, func(sym symbol.Symbol) error {
+		if sym == 0 {
+			return nil
+		}
+		word := db.TitleLang.Dict.ToString(sym)
+		for _, id := range db.InvTW[word] {
+			if len(word) > len(docs[id]) {
+				docs[id] = word
+			}
+		}
+		if title == "" {
+			title = word
+		} else {
+			title += " " + word
+		}
+		return nil
+	})
+	return title, docs
 }
 
 // Load loads the extracted document from TransFile; subsequent calls to Load
