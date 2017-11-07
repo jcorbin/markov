@@ -20,6 +20,10 @@ import (
 	"github.com/jcorbin/markov/internal/symbol"
 )
 
+func in2out(in string) string {
+	return strings.TrimSuffix(in, path.Ext(in)) + ".markov.json"
+}
+
 func closeup(name string, f *os.File, rerr *error) func() {
 	return func() {
 		if cerr := f.Close(); *rerr == nil {
@@ -67,7 +71,7 @@ func procio(r io.Reader, w io.Writer, info map[string]string) (builder, error) {
 
 func process(nin string, doneDocs chan<- model.DocInfo) {
 	if err := func() (rerr error) {
-		nout := strings.TrimSuffix(nin, path.Ext(nin)) + ".markov.json"
+		nout := in2out(nin)
 
 		fin, err := os.Open(nin)
 		if err != nil {
