@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math/rand"
 	"os"
+	"sort"
 
 	"github.com/jcorbin/markov/internal/symbol"
 )
@@ -36,6 +37,15 @@ type Doc struct {
 // supporting word.
 type SupportDocIDs map[string]string
 
+func (sdids SupportDocIDs) sortedIDs() []string {
+	ids := make([]string, 0, len(sdids))
+	for id := range sdids {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
 // GenTitle generates a random document title, and returns a set of supporting
 // document ids.
 func (db DocDB) GenTitle(rng *rand.Rand) (string, SupportDocIDs) {
@@ -58,6 +68,25 @@ func (db DocDB) GenTitle(rng *rand.Rand) (string, SupportDocIDs) {
 		return nil
 	})
 	return title, docs
+}
+
+// MergedDocLang returns a new language made by merging together all
+// constituent language from the supporting document ids.
+func (db DocDB) MergedDocLang(sup SupportDocIDs) (lng Lang, err error) {
+	// TODO: parallelism / cache
+	ids := sup.sortedIDs()
+	for _, id := range ids {
+		doc, err := db.Docs[id].Load()
+		if err != nil {
+			return lng, err
+		}
+		if lng.Dict == nil {
+			lng = doc.Lang
+			continue
+		}
+		lng = lng.Merge(doc.Lang)
+	}
+	return lng, nil
 }
 
 // Load loads the extracted document from TransFile; subsequent calls to Load
