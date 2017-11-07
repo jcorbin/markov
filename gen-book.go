@@ -24,6 +24,21 @@ func init() {
 	rng = rand.New(rand.NewSource(rand.Int63()))
 }
 
+func genTitle() (string, model.SupportDocIDs, error) {
+	for i := 0; i < 100; i++ {
+		title, docs := db.GenTitle(rng)
+		for id, word := range docs {
+			if len(word) <= 3 {
+				delete(docs, id)
+			}
+		}
+		if len(docs) > 9 {
+			return title, docs, nil
+		}
+	}
+	return "", nil, errors.New("unable to produce acceptable title")
+}
+
 func main() {
 	if err := func(r io.Reader) error {
 		dec := json.NewDecoder(r)
@@ -31,20 +46,7 @@ func main() {
 			return err
 		}
 
-		title, docs, err := func() (string, model.SupportDocIDs, error) {
-			for i := 0; i < 100; i++ {
-				title, docs := db.GenTitle(rng)
-				for id, word := range docs {
-					if len(word) <= 3 {
-						delete(docs, id)
-					}
-				}
-				if len(docs) > 9 {
-					return title, docs, nil
-				}
-			}
-			return "", nil, errors.New("unable to produce acceptable title")
-		}()
+		title, docs, err := genTitle()
 		if err != nil {
 			return err
 		}
