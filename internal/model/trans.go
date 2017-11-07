@@ -19,10 +19,10 @@ type WeightedSymbols map[symbol.Symbol]uint
 func (ts Trans) Add(a, b symbol.Symbol, d uint) {
 	ws := ts[a]
 	if ws == nil {
-		ws = make(WeightedSymbols, d)
+		ws = make(WeightedSymbols, 1)
 		ts[a] = ws
 	}
-	ws[b]++
+	ws[b] += d
 }
 
 // AddChain adds a chain of symbols to the table.
