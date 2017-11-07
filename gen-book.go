@@ -115,7 +115,7 @@ func main() {
 
 	flag.Parse()
 
-	if err := func(r io.Reader) error {
+	if err := func(r io.Reader, w io.Writer) error {
 		dec := json.NewDecoder(r)
 		if err := dec.Decode(&db); err != nil {
 			return err
@@ -126,7 +126,7 @@ func main() {
 			if err == nil {
 				for _, id := range suchDocs.SortedIDs() {
 					di := db.Docs[id]
-					fmt.Printf("%s\n", di.SourceFile)
+					fmt.Fprintf(w, "%s\n", di.SourceFile)
 				}
 			}
 			return err
@@ -138,17 +138,17 @@ func main() {
 		}
 
 		title = strings.Title(title)
-		fmt.Printf("Title: %q\n", title)
+		fmt.Fprintf(w, "Title: %q\n", title)
 		for id := range docs {
-			fmt.Printf("- %q\n", id)
+			fmt.Fprintf(w, "- %q\n", id)
 		}
 
 		lng, err := db.MergedDocLang(docs)
 		if err != nil {
 			return err
 		}
-		return genBook(title, lng, os.Stdout)
-	}(os.Stdin); err != nil {
+		return genBook(title, lng, w)
+	}(os.Stdin, os.Stdout); err != nil {
 		log.Fatalln(err)
 	}
 }
