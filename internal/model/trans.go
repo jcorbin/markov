@@ -14,6 +14,40 @@ type Trans map[symbol.Symbol]WeightedSymbols
 // WeightedSymbols is a weighted set of symbols.
 type WeightedSymbols map[symbol.Symbol]uint
 
+// Merge merges another transition table into a copy of this one, returning the
+// new copy; requires a dictionary rewrite table resulting from the
+// corresponding symbol.Dict.Merge
+func (ts Trans) Merge(other Trans, rewrite map[symbol.Symbol]symbol.Symbol) Trans {
+	out := make(Trans, len(ts))
+
+	for a, ows := range ts {
+		ws := make(WeightedSymbols, len(ows))
+		for b, w := range ows {
+			ws[b] = w
+		}
+		out[a] = ws
+	}
+
+	for a, ows := range other {
+		if rsym, def := rewrite[a]; def {
+			a = rsym
+		}
+		ws := ts[a]
+		if ws == nil {
+			ws = make(WeightedSymbols, len(ows))
+			ts[a] = ws
+		}
+		for b, w := range ows {
+			if rsym, def := rewrite[b]; def {
+				b = rsym
+			}
+			ws[b] += w
+		}
+	}
+
+	return out
+}
+
 // Add adds a transition to the table, incrementing the weight for a -> b by
 // the given delta.
 func (ts Trans) Add(a, b symbol.Symbol, d uint) {
