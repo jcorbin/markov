@@ -28,6 +28,41 @@ func (d *Dict) Len() int {
 	return len(d.sym2str)
 }
 
+// Merge merges another dictionary into a copy of this dictionary, returning
+// the new merged copy.
+func (d *Dict) Merge(other *Dict) (map[Symbol]Symbol, *Dict) {
+	rewrite := make(map[Symbol]Symbol, len(other.sym2str))
+	for isym, otherStr := range other.sym2str {
+		sym := Symbol(isym)
+		myStr, def := d.Get(sym)
+		if !def || myStr != otherStr {
+			rewrite[sym] = sym
+		}
+	}
+
+	n := len(d.sym2str) + len(rewrite)
+	out := Dict{
+		str2sym: make(map[string]Symbol, n),
+		sym2str: make([]string, 0, n),
+	}
+	out.sym2str = append(out.sym2str, d.sym2str...)
+	for isym, str := range d.sym2str {
+		out.str2sym[str] = Symbol(isym)
+	}
+
+	for isym, str := range other.sym2str {
+		sym := Symbol(isym)
+		if _, def := rewrite[sym]; def {
+			newSym := Symbol(len(out.sym2str))
+			rewrite[sym] = newSym
+			out.sym2str = append(out.sym2str, str)
+			out.str2sym[str] = newSym
+		}
+	}
+
+	return rewrite, &out
+}
+
 // Add adds a string, returning its Symbol.
 func (d *Dict) Add(str string) Symbol {
 	sym, def := d.str2sym[str]
