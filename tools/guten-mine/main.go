@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"log"
 	"os"
@@ -21,8 +22,21 @@ import (
 	"github.com/jcorbin/markov/internal/symbol"
 )
 
+var dbDir string
+
 func in2out(in string) string {
-	return strings.TrimSuffix(in, path.Ext(in)) + ".markov.json"
+	if dbDir == "" {
+		return strings.TrimSuffix(in, path.Ext(in)) + ".markov.json"
+	}
+	h := fnv.New64a()
+	h.Write([]byte(in))
+	b := h.Sum(make([]byte, 0, 128))
+	return path.Join(
+		dbDir,
+		fmt.Sprintf("%02x", b[0]),
+		fmt.Sprintf("%02x", b[1]),
+		fmt.Sprintf("%02x", b[2:]),
+	) + ".markov.json"
 }
 
 func closeup(name string, f *os.File, rerr *error) func() {
@@ -125,6 +139,7 @@ func process(nin string, doneDocs chan<- model.DocInfo) {
 func main() {
 	argsFromStdin := false
 	flag.BoolVar(&argsFromStdin, "stdin", false, "read path args from stdin")
+	flag.StringVar(&dbDir, "dbDir", "", "database directory in which to store extracted json; rather than beside source files")
 	flag.Parse()
 
 	if !argsFromStdin && len(flag.Args()) == 0 {
