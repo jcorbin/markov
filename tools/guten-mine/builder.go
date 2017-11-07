@@ -13,7 +13,7 @@ import (
 type builder struct {
 	model.Doc
 
-	chain []symbol.Symbol
+	last symbol.Symbol
 }
 
 func (bld *builder) SetTitle(title string) error {
@@ -40,7 +40,7 @@ func (bld *builder) OnToken(tok []byte) error {
 		switch r {
 
 		case '.', '!', '?':
-			return bld.flush()
+			return bld.advance(bld.Lang.Dict.Add(string(r)))
 
 		case ':': // TODO: could be a register/mode switch
 			return nil
@@ -62,13 +62,12 @@ func (bld *builder) OnToken(tok []byte) error {
 
 	stok := string(tok)
 	stok = strings.ToLower(stok)
-	bld.chain = append(bld.chain, bld.Lang.Dict.Add(stok))
-	return nil
+	return bld.advance(bld.Lang.Dict.Add(stok))
 }
 
-func (bld *builder) flush() error {
-	bld.Lang.Trans.AddChain(bld.chain)
-	bld.chain = bld.chain[:0]
+func (bld *builder) advance(sym symbol.Symbol) error {
+	bld.Lang.Trans.Add(bld.last, sym, 1)
+	bld.last = sym
 	return nil
 }
 
