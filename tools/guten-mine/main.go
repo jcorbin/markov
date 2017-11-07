@@ -50,8 +50,10 @@ func prefer(a, b model.DocInfo) bool {
 
 func procio(r io.Reader, w io.Writer, info map[string]string) (builder, error) {
 	bld := builder{
-		Info: info,
-		Lang: model.MakeLang(),
+		Doc: model.Doc{
+			Info: info,
+			Lang: model.MakeLang(),
+		},
 	}
 	gs := scanner.New(r, extractor.New(&bld)) // scanner.Dumper{}
 	err := gs.Scan()
