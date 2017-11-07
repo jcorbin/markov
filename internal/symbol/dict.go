@@ -77,5 +77,15 @@ func (d *Dict) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON marshals the dictionary as JSON.
 func (d *Dict) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &d.str2sym)
+	err := json.Unmarshal(data, &d.str2sym)
+	if err == nil {
+		d.sym2str = make([]string, len(d.str2sym)+1)
+		for str, sym := range d.str2sym {
+			if int(sym) >= len(d.sym2str) {
+				continue
+			}
+			d.sym2str[sym] = str
+		}
+	}
+	return err
 }
