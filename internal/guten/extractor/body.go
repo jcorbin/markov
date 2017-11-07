@@ -14,6 +14,7 @@ var errEmptyBody = errors.New("empty body")
 type BodyResultor interface {
 	OnToken([]byte) error
 	EndParagraph() error
+	Close() error
 }
 
 type bodyExtractor struct {
@@ -29,7 +30,7 @@ func (be *bodyExtractor) close() error {
 	if !be.began {
 		return errEmptyBody
 	}
-	return nil
+	return be.res.Close()
 }
 
 func (be *bodyExtractor) data(buf []byte) error {

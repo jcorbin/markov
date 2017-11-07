@@ -69,6 +69,10 @@ func (bld *builder) EndParagraph() error {
 	return bld.advance(symbol.GS)
 }
 
+func (bld *builder) Close() error {
+	return bld.advance(symbol.EOF)
+}
+
 func (bld *builder) advance(sym symbol.Symbol) error {
 	bld.Lang.Trans.Add(bld.last, sym, 1)
 	bld.last = sym
