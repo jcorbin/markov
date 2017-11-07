@@ -186,8 +186,16 @@ func main() {
 
 		title = strings.Title(title)
 		fmt.Fprintf(w, "Title: %q\n", title)
+		fmt.Fprintf(w, "\nSupporting Docs:\n")
 		for id := range docs {
 			fmt.Fprintf(w, "- %q\n", id)
+		}
+		fmt.Fprintf(w, "\n")
+
+		if n := (80 - len(title)) / 2; n > 0 {
+			fmt.Fprintf(w, "\n%s%s\n\n", strings.Repeat(" ", n), strings.ToUpper(title))
+		} else {
+			fmt.Fprintf(w, "\n%s\n\n", strings.ToUpper(title))
 		}
 
 		lng, err := db.MergedDocLang(docs)
