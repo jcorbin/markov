@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/jcorbin/markov/internal/guten/extractor"
 	"github.com/jcorbin/markov/internal/guten/scanner"
@@ -80,6 +81,14 @@ func process(nin string, doneDocs chan<- model.DocInfo) {
 		defer closeup(nin, fin, &rerr)
 
 		fout, err := os.Create(nout)
+		if pe, ok := err.(*os.PathError); ok {
+			if pe.Err == syscall.ENOENT {
+				err = os.MkdirAll(path.Dir(nout), 0777)
+				if err == nil {
+					fout, err = os.Create(nout)
+				}
+			}
+		}
 		if err != nil {
 			return fmt.Errorf("failed to create %q: %v", nout, err)
 		}
