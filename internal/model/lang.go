@@ -16,4 +16,12 @@ func MakeLang() Lang {
 	}
 }
 
-// TODO: merging
+// Merge merges another language into a copy of this one, returning the new
+// copy.
+func (lng Lang) Merge(other Lang) Lang {
+	rewrite, dict := lng.Dict.Merge(other.Dict)
+	return Lang{
+		Dict:  dict,
+		Trans: lng.Trans.Merge(other.Trans, rewrite),
+	}
+}
