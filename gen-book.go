@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -84,10 +85,50 @@ func genBook(title string, lng model.Lang, w io.Writer) error {
 	return nil
 }
 
+func collectDocs(atLeast int) (model.SupportDocIDs, error) {
+	suchDocs := make(model.SupportDocIDs, 2*atLeast)
+	i := 0
+	for ; i < 4*atLeast && len(suchDocs) < atLeast; i++ {
+		title, docs, err := genTitle()
+		if err != nil {
+			return nil, err
+		}
+		n := 0
+		for id, word := range docs {
+			if m := len(suchDocs[id]); m < len(word) {
+				suchDocs[id] = word
+				if m == 0 {
+					n++
+				}
+			}
+		}
+		log.Printf("added %v docs from %q", n, title)
+	}
+	log.Printf("collected %v docs from %v titles", len(suchDocs), i)
+	return suchDocs, nil
+}
+
 func main() {
+	// useful to prepaare a small set of documents to iterate on extraction
+	var numDocsToCollect int
+	flag.IntVar(&numDocsToCollect, "collectDocs", 0, "collect and print a list of useful document source files")
+
+	flag.Parse()
+
 	if err := func(r io.Reader) error {
 		dec := json.NewDecoder(r)
 		if err := dec.Decode(&db); err != nil {
+			return err
+		}
+
+		if numDocsToCollect != 0 {
+			suchDocs, err := collectDocs(numDocsToCollect)
+			if err == nil {
+				for _, id := range suchDocs.SortedIDs() {
+					di := db.Docs[id]
+					fmt.Printf("%s\n", di.SourceFile)
+				}
+			}
 			return err
 		}
 
