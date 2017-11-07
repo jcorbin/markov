@@ -23,6 +23,11 @@ func NewDict() *Dict {
 	}
 }
 
+// Len returns the number of defined symbols in the dictionary.
+func (d *Dict) Len() int {
+	return len(d.sym2str)
+}
+
 // Add adds a string, returning its Symbol.
 func (d *Dict) Add(str string) Symbol {
 	sym, def := d.str2sym[str]
