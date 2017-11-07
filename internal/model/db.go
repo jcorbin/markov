@@ -37,7 +37,8 @@ type Doc struct {
 // supporting word.
 type SupportDocIDs map[string]string
 
-func (sdids SupportDocIDs) sortedIDs() []string {
+// SortedIDs returns the supporting IDs in sorted order.
+func (sdids SupportDocIDs) SortedIDs() []string {
 	ids := make([]string, 0, len(sdids))
 	for id := range sdids {
 		ids = append(ids, id)
@@ -74,7 +75,7 @@ func (db DocDB) GenTitle(rng *rand.Rand) (string, SupportDocIDs) {
 // constituent language from the supporting document ids.
 func (db DocDB) MergedDocLang(sup SupportDocIDs) (lng Lang, err error) {
 	// TODO: parallelism / cache
-	ids := sup.sortedIDs()
+	ids := sup.SortedIDs()
 	for _, id := range ids {
 		doc, err := db.Docs[id].Load()
 		if err != nil {
