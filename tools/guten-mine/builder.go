@@ -65,6 +65,10 @@ func (bld *builder) OnToken(tok []byte) error {
 	return bld.advance(bld.Lang.Dict.Add(stok))
 }
 
+func (bld *builder) EndParagraph() error {
+	return bld.advance(symbol.GS)
+}
+
 func (bld *builder) advance(sym symbol.Symbol) error {
 	bld.Lang.Trans.Add(bld.last, sym, 1)
 	bld.last = sym

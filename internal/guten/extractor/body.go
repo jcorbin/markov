@@ -13,6 +13,7 @@ var errEmptyBody = errors.New("empty body")
 // events.
 type BodyResultor interface {
 	OnToken([]byte) error
+	EndParagraph() error
 }
 
 type bodyExtractor struct {
@@ -80,15 +81,13 @@ func (be *bodyExtractor) flushPara() error {
 	if !be.began {
 		return be.mayBegin()
 	}
-	// TODO: expose
-	// fmt.Printf("PARA\n")
-	return be.proc()
+	return be.emitParagraph()
 }
 
 func (be *bodyExtractor) mayBegin() error {
 	if be.isBegin() {
 		be.began = true
-		return be.proc()
+		return be.emitParagraph()
 	}
 
 	// fmt.Printf("???: %q\n", be.buf)
@@ -116,7 +115,7 @@ func (be *bodyExtractor) isBegin() bool {
 	return false
 }
 
-func (be *bodyExtractor) proc() error {
+func (be *bodyExtractor) emitParagraph() error {
 	defer func() {
 		be.buf = be.buf[:0]
 	}()
@@ -156,6 +155,9 @@ func (be *bodyExtractor) proc() error {
 			return err
 		}
 	}
+	if err := sc.Err(); err != nil {
+		return err
+	}
 
-	return sc.Err()
+	return be.res.EndParagraph()
 }
