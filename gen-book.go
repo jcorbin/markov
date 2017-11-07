@@ -15,12 +15,18 @@ import (
 	"github.com/jcorbin/markov/internal/symbol"
 )
 
+var (
+	db  model.DocDB
+	rng *rand.Rand
+)
+
+func init() {
+	rng = rand.New(rand.NewSource(rand.Int63()))
+}
+
 func main() {
 	if err := func(r io.Reader) error {
-		rng := rand.New(rand.NewSource(rand.Int63()))
-
 		dec := json.NewDecoder(r)
-		var db model.DocDB
 		if err := dec.Decode(&db); err != nil {
 			return err
 		}
