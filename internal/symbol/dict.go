@@ -19,18 +19,23 @@ type Dict struct {
 const GS = Symbol(1)
 const gs = "\x1d"
 
+// EOF is the end-of-file symbol.
+const EOF = Symbol(2)
+const eof = "\x1a"
+
 // NewDict creates a new dict with the 0 Symbol mapped to "".
 func NewDict() *Dict {
 	return &Dict{
 		str2sym: map[string]Symbol{
 			"":  0,
 			gs:  GS,
-			".": 2,
-			"!": 3,
-			"?": 4,
+			eof: EOF,
+			".": 3,
+			"!": 4,
+			"?": 5,
 		},
 		sym2str: []string{
-			"", gs,
+			"", gs, eof,
 			".", "!", "?",
 		},
 	}
