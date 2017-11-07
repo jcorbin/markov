@@ -32,9 +32,13 @@ type Doc struct {
 	Lang  Lang              `json:"language"`
 }
 
+// SupportDocIDs is a set of supporting document ids mapped to their longest
+// supporting word.
+type SupportDocIDs map[string]string
+
 // GenTitle generates a random document title, and returns a set of supporting
-// document ids (mapped to their longest supporting word).
-func (db DocDB) GenTitle(rng *rand.Rand) (string, map[string]string) {
+// document ids.
+func (db DocDB) GenTitle(rng *rand.Rand) (string, SupportDocIDs) {
 	title, docs := "", make(map[string]string)
 	_ = db.TitleLang.Trans.GenChain(rng, func(sym symbol.Symbol) error {
 		if sym == 0 {
