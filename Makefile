@@ -1,12 +1,12 @@
 GUTENROOT ?= ~/gutenberg
 
-guten-mine:
-	go build ./tools/guten-mine
+%: tools/%
+	go build ./$<
 
 PHONY: docs.json
 docs.json: guten-mine
 	time find $(GUTENROOT) -type f -name '*.txt' | ./guten-mine -stdin >$@ 2>$@.log
 
 clean:
-	rm guten-mine
+	rm guten-mine word-demo
 	rm docs.json docs.json.log
