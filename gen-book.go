@@ -39,7 +39,7 @@ func genTitle() (string, model.SupportDocIDs, error) {
 	return "", nil, errors.New("unable to produce acceptable title")
 }
 
-func genBook(title string, lng model.Lang) error {
+func genBook(title string, lng model.Lang, w io.Writer) error {
 	// TODO: proper content generation: needs paragraph, eof markers, maybe
 	// even section headers.
 	var buf bytes.Buffer
@@ -53,7 +53,10 @@ func genBook(title string, lng model.Lang) error {
 			word := lng.Dict.ToString(sym)
 			if n := buf.Len(); n+len(word) > 79 {
 				buf.WriteRune('\n')
-				fmt.Printf(buf.Bytes())
+				_, err := w.Write(buf.Bytes())
+				if err != nil {
+					return err
+				}
 				buf.Reset()
 			} else {
 				if n > 0 {
@@ -72,7 +75,10 @@ func genBook(title string, lng model.Lang) error {
 	}
 	if buf.Len() > 0 {
 		buf.WriteRune('\n')
-		fmt.Printf(buf.Bytes())
+		_, err := w.Write(buf.Bytes())
+		if err != nil {
+			return err
+		}
 		buf.Reset()
 	}
 	return nil
@@ -100,7 +106,7 @@ func main() {
 		if err != nil {
 			return err
 		}
-		return genBook(title, lng)
+		return genBook(title, lng, os.Stdout)
 	}(os.Stdin); err != nil {
 		log.Fatalln(err)
 	}
