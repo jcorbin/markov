@@ -2,7 +2,7 @@ GUTENROOT ?= ~/gutenberg
 DOC_LISTS = $(shell ls *.list)
 DOC_DBS = $(DOC_LISTS:.list=.db)
 
-BINS=bin/guten-mine bin/word-demo
+BINS=bin/guten-mine bin/word-demo bin/gen-book bin/gen-doc-list
 
 bins: $(BINS)
 
