@@ -1,4 +1,6 @@
 GUTENROOT ?= ~/gutenberg
+DOC_LISTS = $(shell ls *.list)
+DOC_DBS = $(DOC_LISTS:.list=.db)
 
 BINS=bin/guten-mine bin/word-demo
 
@@ -11,11 +13,12 @@ bin/%: tools/%
 all.list:
 	find $(GUTENROOT) -type f -name '*.txt' >$@
 
-PHONY: docs.json
-docs.json: all.list guten-mine
-	time ./guten-mine -stdin <$< >$@ 2>$@.log
+%.db: %.list bin/guten-mine
+	! [ -e $@ ] || rm $@ -rf
+	mkdir $@
+	time ./bin/guten-mine -dbDir $@ -stdin <$< >$@/index.json 2>$@/extract.log
 
 clean:
-	rm docs.json docs.json.log
+	rm -rf $(DOC_DBS)
 	rm all.list
 	rm -f $(BINS)
