@@ -1,3 +1,4 @@
 bin/
-docs.json
-docs.json.log
+all.list
+tiny.list
+*.db/
