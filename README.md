@@ -1,28 +1,43 @@
 # Markov Chaining Around Project Gutenberg
 
-The goal: generate a random book
+The goal: generate random books
 
-How I plan to get there:
-- generate a title by markov chaining through possible titles
-- generate its content by markov chaining through a transition table created by
-  merging the transition table of each book that could have contributed a word
-  to the title
+The setup:
+- download all of project gutenberg and extract from it
+- a markov transition table from each book's text
+- a markov transition table from all books' titles
 
-Since generating titles that way probably won't suffice:
-- I plan to augment the extracted title transition table with "mash-up" rules,
-  e.g. so that singleton titles like "Don Quixote" can chain to "Don Quixote
-  and The ..."
-- I plan to experiment with word coining, by extracting a another form of state
-  (TBD 2-grams, 3-grams, phonemes, etc); this could then provide another form
-  of explosion, as tables could cross-pollinate based on contributing corpii to
-  a novel title word
+Then generate a random title by chaining through the title transition table.
 
-Such word coining is probably even more interesting within a fused table, to
-coin combined words...
+Collect a list of every document that could have contributed each non-trivial
+word to that random title. Now merge all of their markov transition tables into
+a new table.
 
-## Status: Under Development ™
+Then generate some body text from the title-derived combined transition table.
 
-- there isn't yet any generation...
-- ...the extraction mechanism is barely working:
-- on my machine, I can mine all of the ~74K files that I've downloaded from
-  gutenberg in ~7 minutes; of those, only ~13K successfully extract
+## How Do
+
+Download all of Project Gutenberg (BE KIND use a mirror! TODO link
+suggestion); unpack it to `$HOME/gutenberg` (or if you choose
+another place, `export GUTENROOT=.../that/path`).
+
+Build All The Things ™ with `make bins`.
+
+Mine markov goodness out with a `make all.db`; currently takes ~7
+minutes on my machine.
+
+Genearte a book by running `./bin/gen-book all.db/index.json` .
+
+## Rambling on Possibilities
+
+So far title generation has worked better than expected; however it might be
+useful to explore adding artificial "mash-up" rules. E.g. currently the book
+"Don Quixote" will never generate an interesting title; what if we had "Don
+Quixote and The ...".
+
+Improved structural generation, including section headers, better punctuation
+etc. Maybe try to extract entities, store them in a list, and then fill
+entities in to generated structure. Maybe try a hierarchical model, e.g.
+different transition table within quotations...
+
+Explore generating random words from N-grams, or phoneme chaining.
