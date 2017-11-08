@@ -10,6 +10,11 @@ bin/%: tools/%
 	[ -d bin ] || mkdir bin
 	go build -o $@ ./$<
 
+.PHONY: tiny.list
+tiny.list: bin/gen-doc-list
+	./bin/gen-doc-list -atLeast 400 all.db/index.json \
+		| jq -r .sourceFile >$@
+
 all.list:
 	find $(GUTENROOT) -type f -name '*.txt' >$@
 
@@ -20,5 +25,5 @@ all.list:
 
 clean:
 	rm -rf $(DOC_DBS)
-	rm all.list
+	rm all.list tiny.list
 	rm -f $(BINS)
